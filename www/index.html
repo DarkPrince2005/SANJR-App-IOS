@@ -1,0 +1,130 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>SOSIT.NJR.Mobile</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="scripts/jkl-parsexml.js"></script>
+    <script src="scripts/index.js"></script>
+    <!-- SOSIT.NJR.Mobile references -->
+    <link href="css/index.css" rel="stylesheet" />
+</head>
+<body>
+    
+        <table cellpadding="6" cellspacing="0" border="0" style="margin:0 auto;width:100%;">
+            <tr>
+                <th colspan="3">Event Information</th>
+            </tr>
+            <tr>
+                <td>Event key:</td>
+                <td><input type="text" name="eventkey" id="eventkey" value="445e88c2" /></td>
+                <td><input type="button" name="findkey" id="findkey" value="FIND" /></td>
+            </tr>
+            <tr>
+                <th colspan="3">Patient Information</th>
+            </tr>
+            <tr>
+                <td>Patient:</td>
+                <td><input type="text" name="patient" id="patient" /></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Event type:</td>
+                <td><input type="text" name="eventtype" id="eventtype" /></td>
+                <td></td>
+            </tr>
+            <tr>
+                <th colspan="3">Product Information</th>
+            </tr>
+            <tr>
+                <td colspan="3"><input type="button" name="scan" id="scan" value="SCAN" onclick="startScan()" /></td>
+            </tr>
+        </table>
+        <p id="info"></p>
+        <script type="text/javascript">
+
+            var resultDiv;
+
+            document.addEventListener("deviceready", init, false);
+            function init() {
+                document.querySelector("#scan").addEventListener("touchend", startScan, false);
+                resultDiv = document.querySelector("#info");
+            }
+
+            function startScan() {
+
+                cordova.plugins.barcodeScanner.scan(
+                    function (result) {
+                        var s = "Result: " + result.text + "<br/>" + "Format: " + result.format + "<br/>" + "Cancelled: " + result.cancelled;
+                        resultDiv.innerHTML = s;
+                    },
+                    function (error) {
+                        alert("Scanning failed: " + error);
+                    }
+                );
+
+            }
+
+
+            $(document).ready(function () {
+                $("#ajax_error").ajaxError(function (e, jqxhr, settings, exception) {
+                    $(this).text("Error requesting page " + settings.url);
+                });
+
+                $("#findkey").on('click', function (event) {
+
+                    var eventkey = $("#eventkey").val();
+
+                    var request = {};
+                    request.Username = "admin@sanjr.co.za";
+                    request.Password = "Gtrd%r43ds";
+                    request.SessionID = "";
+                    request.Application = "NJR";
+                    request.Interface = "Event";
+                    request.Method = "Find";
+                    request.Format = "NJR-1.0";
+                    request.Payload = '<Payload><Event key=\"' + eventkey + '\" /></Payload>';
+
+                    url = "http://portal.sosit.co.za:80/MessageRequest";
+
+                    $.ajax({
+                        type: 'GET',
+                        url: url,
+                        contentType: "application/json",
+                        dataType: 'jsonp',
+                        data: request,
+                        crossDomain: true,
+                        success: function (data) {
+                            txt = data.Payload;
+                            if (window.DOMParser) {
+                                parser = new DOMParser();
+                                xmlDoc = parser.parseFromString(txt, "text/xml");
+                            }
+                            else // Internet Explorer
+                            {
+                                xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
+                                xmlDoc.async = false;
+                                xmlDoc.loadXML(txt);
+                            }
+
+                            $("#patient").val(xmlDoc.getElementsByTagName("firstname")[0].childNodes[0].nodeValue + ' ' + xmlDoc.getElementsByTagName("lastname")[0].childNodes[0].nodeValue);
+                            $("#eventtype").val(xmlDoc.getElementsByTagName("eventtypename")[0].childNodes[0].nodeValue);
+                        }
+                    });
+                });
+            });
+
+
+            $(document).bind("mobileinit", function () {
+                // Make your jQuery Mobile framework configuration changes here!
+                $("#infodiv").html('mobileinit worked');
+                $.mobile.allowCrossDomainPages = true;
+            });
+        </script>
+        <!-- Cordova reference, this is added to your app when it's built. -->
+        <script src="cordova.js"></script>
+        <script src="scripts/platformOverrides.js"></script>
+
+        <script src="scripts/index.js"></script>
+    </body>
+</html>
